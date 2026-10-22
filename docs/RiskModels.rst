@@ -163,3 +163,17 @@ References
 .. [3] Ledoit, O., & Wolf, M. (2003). `Honey, I Shrunk the Sample Covariance Matrix <http://www.ledoit.net/honey.pdf>`_ The Journal of Portfolio Management, 30(4), 110–119. https://doi.org/10.3905/jpm.2004.110
 .. [4] Ledoit, O., & Wolf, M. (2001). `Improved estimation of the covariance matrix of stock returns with an application to portfolio selection <http://www.ledoit.net/ole2.pdf>`_, 10, 603–621.
 .. [5] Chen et al. (2010),  `Shrinkage Algorithms for MMSE Covariance Estimation <https://arxiv.org/pdf/0907.4698.pdf>`_, IEEE Transactions on Signals Processing, 58(10), 5016-5029.
+
+Missing returns
+---------------
+
+Automatic Ledoit-Wolf and OAS estimates use the common window of fully observed
+returns. They warn when incomplete rows are discarded and require at least two
+complete observations. Missing values are not zero returns; explicitly choose
+an imputation model before calling these estimators if dropping rows would lose
+too much information. Manual shrinkage retains the pairwise sample covariance.
+
+``semicovariance`` averages each pair over jointly observed returns, including
+observed zero returns. It raises an error if any pair has no joint observation.
+As with pairwise sample covariance, the resulting matrix may need the existing
+positive-semidefinite repair, which can alter individual entries.
