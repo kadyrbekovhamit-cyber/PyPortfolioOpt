@@ -177,3 +177,29 @@ too much information. Manual shrinkage retains the pairwise sample covariance.
 observed zero returns. It raises an error if any pair has no joint observation.
 As with pairwise sample covariance, the resulting matrix may need the existing
 positive-semidefinite repair, which can alter individual entries.
+
+.. warning::
+
+    This changes results for inputs containing missing returns. Previous
+    versions treated missing returns as zero downside observations and divided
+    all semicovariance entries by the total number of rows. Saved portfolio
+    weights, reported risk and Sharpe ratios can therefore change materially;
+    recompute them and review the chosen missing-data policy. Fully observed
+    inputs retain the same semicovariance formula.
+
+    On the repository stock-price fixture with ``benchmark=0`` and a 2% risk-free
+    rate, the long-only ``EfficientFrontier.max_sharpe`` example's reported risk
+    changes from approximately 0.0737 to 0.1733 and its Sharpe ratio from 3.48 to
+    1.81. These are in-sample outputs for different optimized portfolios, using
+    a semicovariance risk matrix; they are not realized volatility, a universal
+    multiplier, or evidence of better out-of-sample performance.
+
+Pairwise deletion does not guarantee a positive-semidefinite matrix. For example,
+the three return rows ``(-.1, -.1)``, ``(0, NaN)``, ``(NaN, 0)`` at benchmark zero
+and frequency one produce raw entries ``[[.005, .01], [.01, .005]]``. Its
+eigenvalues are -.005 and .015. The default spectral repair warns and sets the
+negative eigenvalue to zero, producing .0075 in every entry: each diagonal
+increases by .0025 (50%). Thus a repaired diagonal is no longer necessarily the
+observed marginal downside moment. ``fix_method="diag"`` instead adds .0055 to
+each diagonal in this example. Neither repair replaces a considered missing-data
+model or restores observations that were never recorded.

@@ -73,3 +73,48 @@ def test_semicovariance_uses_joint_counts_off_diagonal():
         returns, returns_data=True, benchmark=0, frequency=1
     )
     np.testing.assert_allclose(actual, np.full((2, 2), 0.01))
+
+
+@pytest.mark.parametrize("frequency", [1, 252])
+@pytest.mark.parametrize(
+    "fix_method, expected",
+    [
+        ("spectral", [[0.0075, 0.0075], [0.0075, 0.0075]]),
+        ("diag", [[0.0105, 0.01], [0.01, 0.0105]]),
+    ],
+)
+def test_semicovariance_repairs_indefinite_pairwise_estimate(
+    fix_method, expected, frequency
+):
+    returns = pd.DataFrame({"A": [-0.1, 0.0, np.nan], "B": [-0.1, np.nan, 0.0]})
+    original = returns.copy()
+    # Each variance uses two observations; the cross-product uses one.
+    # Raw matrix [[.005, .01], [.01, .005]] has eigenvalues -.005 and .015.
+    # Spectral clipping gives .015/2 in every entry (diagonal increases 50%).
+    # Diagonal repair instead adds 1.1 * .005 to both diagonal entries.
+    with pytest.warns(UserWarning, match="non positive semidefinite") as caught:
+        actual = risk_models.semicovariance(
+            returns,
+            returns_data=True,
+            benchmark=0,
+            frequency=frequency,
+            fix_method=fix_method,
+        )
+    assert len(caught) == 1
+    expected = pd.DataFrame(
+        np.array(expected) * frequency, index=returns.columns, columns=returns.columns
+    )
+    pd.testing.assert_frame_equal(actual, expected)
+    assert np.linalg.eigvalsh(actual).min() >= -1e-12
+    pd.testing.assert_frame_equal(returns, original)
+
+
+def test_semicovariance_complete_data_retains_full_sample_formula():
+    returns = pd.DataFrame({"A": [-0.1, 0.02, 0.0], "B": [0.03, -0.05, -0.02]})
+    benchmark = 0.01
+    downside = np.minimum(returns.to_numpy() - benchmark, 0)
+    expected = downside.T @ downside / len(returns) * 252
+    actual = risk_models.semicovariance(
+        returns, returns_data=True, benchmark=benchmark, frequency=252
+    )
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
