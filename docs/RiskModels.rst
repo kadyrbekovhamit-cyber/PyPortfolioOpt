@@ -203,3 +203,13 @@ increases by .0025 (50%). Thus a repaired diagonal is no longer necessarily the
 observed marginal downside moment. ``fix_method="diag"`` instead adds .0055 to
 each diagonal in this example. Neither repair replaces a considered missing-data
 model or restores observations that were never recorded.
+
+There is no configurable minimum joint-observation count: a pair with one
+shared return is allowed, while a pair with no shared returns raises an error.
+Different entries can therefore be estimated from very different sample sizes.
+In the example above, the off-diagonal uses one observation and each diagonal
+uses two; dividing the off-diagonal by the marginal scales gives 2, not a valid
+correlation. Spectral repair restores positive semidefiniteness but does not
+make that one-observation estimate reliable or add missing information. Check
+joint-observation counts and choose a missing-data policy before using the
+matrix for portfolio optimization.
